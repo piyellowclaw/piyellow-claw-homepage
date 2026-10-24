@@ -1,0 +1,21 @@
+.DS_Store
+.env
+.env.*
+node_modules/
+.local/
+*.log
+__pycache__/
+
+# Private operations and sensitive local files
+HOSTING.md
+DEPLOYMENT.md
+.envrc
+*.pem
+*.key
+*.p12
+*.pfx
+*.bundle
+logs/
+runtime/
+private/
+.local/
