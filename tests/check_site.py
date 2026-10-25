@@ -11,9 +11,14 @@ class Page(HTMLParser):
     def handle_starttag(self, tag, attrs):
         self.items.append((tag, dict(attrs)))
 
+asset_versions = []
 for name, lang in [('index.html', 'zh-Hant'), ('en.html', 'en')]:
     source = (ROOT / name).read_text(encoding='utf-8')
     page = Page(source); items = page.items
+    assets = [a.get('href') for t, a in items if t == 'link' and a.get('rel') == 'stylesheet']
+    assets += [a.get('src') for t, a in items if t == 'script' and a.get('src')]
+    assert assets == ['style.css?v=portrait-20261025', 'script.js?v=portrait-20261025'], name
+    asset_versions.append([urlsplit(asset).query for asset in assets])
     ids = [a['id'] for _, a in items if 'id' in a]
     assert len(ids) == len(set(ids)), 'Duplicate ID'
     assert next(a['lang'] for t, a in items if t == 'html') == lang
@@ -36,6 +41,8 @@ for name, lang in [('index.html', 'zh-Hant'), ('en.html', 'en')]:
         assert url in source
     assert not re.search(r'(?:/Users/|192\.168\.|10\.0\.|gh[pousr]_[A-Za-z0-9]{20}|BEGIN .*PRIVATE KEY)', source)
     print('PASS', name, lang, 'links/assets/headings/labels/contacts/privacy sanity')
+assert asset_versions[0] == asset_versions[1]
+print('PASS identical stylesheet / script cache versions in both languages')
 for f in ['style.css', 'script.js']:
     source = (ROOT / f).read_text(encoding='utf-8')
     assert not re.search(r'(?:https?://|/Users/|gh[pousr]_[A-Za-z0-9]{20})', source)
