@@ -43,3 +43,33 @@ assert 'prefers-reduced-motion' in (ROOT / 'style.css').read_text()
 assert ':focus-visible' in (ROOT / 'style.css').read_text()
 assert 'localStorage' in (ROOT / 'script.js').read_text()
 print('PASS reduced motion / keyboard focus / language preference / no remote dependencies')
+
+# Redesign contract: equivalent native controls and explanatory fallbacks.
+control_sets = []
+for name in ['index.html', 'en.html']:
+    source = (ROOT / name).read_text()
+    items = Page(source).items
+    controls = {a['id']: (t, a) for t, a in items if a.get('id') in
+                ['portrait', 'regenerate', 'motion', 'density', 'density-value', 'sketch-status']}
+    assert len(controls) == 6
+    assert controls['regenerate'][0] == controls['motion'][0] == 'button'
+    assert controls['motion'][1]['aria-pressed'] == 'false'
+    assert controls['density'][1]['type'] == 'range'
+    assert controls['density'][1]['min'] == '24' and controls['density'][1]['max'] == '72'
+    assert controls['sketch-status'][1]['role'] == 'status'
+    assert controls['portrait'][1]['aria-hidden'] == 'true'
+    assert '<noscript>' in source and 'id="sketch-description"' in source
+    for asset in ['working.jpg', 'room.jpg', 'icon.png']:
+        assert 'assets/' + asset in source
+    control_sets.append(set(controls))
+assert control_sets[0] == control_sets[1]
+script = (ROOT / 'script.js').read_text()
+for feature in ['IntersectionObserver', 'ResizeObserver', 'document.hidden',
+                'cancelAnimationFrame', 'prefers-reduced-motion', 'pointerType',
+                'Math.imul', 'getContext(\'2d\')']:
+    assert feature in script, feature
+assert 'preventDefault' not in script, 'Pointer interaction must preserve scrolling'
+assert 'setInterval' not in script
+assert 'MIT' in (ROOT / 'LICENSE').read_text()
+assert 'does not cover artwork' in (ROOT / 'assets/NOTICE.md').read_text()
+print('PASS bilingual sketch controls / fallback / artwork / motion lifecycle safeguards')
